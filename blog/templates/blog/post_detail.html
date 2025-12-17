@@ -1,0 +1,117 @@
+<!-- blog/templates/blog/post_detail.html -->
+{% extends 'blog/base.html' %}
+{% load static %}
+{% block title %}{{ post.title }} · XBlog{% endblock %}
+{% block content %}
+    <h1 class="mb-1">{{ post.title }}</h1>
+    <p class="text-muted d-flex align-items-center gap-2"><small>
+        发布于: {{ post.created_on }} | 作者:
+        <img src="{% if post.author.profile and post.author.profile.avatar %}{{ post.author.profile.avatar.url }}{% else %}{% static 'blog/default-avatar.svg' %}{% endif %}"
+             alt="作者头像" style="width:24px;height:24px;border-radius:50%;object-fit:cover;vertical-align:middle">&nbsp;
+        {{ post.author.username }}
+        {% if post.category %} | 分类：<span class="badge bg-info text-dark">{{ post.category.name }}</span>{% endif %}
+    </small></p>
+    <div class="mb-3">
+        {{ html_content|safe }}
+    </div>
+
+    <div class="d-flex align-items-center gap-2 mb-4">
+        {% if request.user.is_authenticated %}
+            <form method="post" action="{% url 'blog:post_like' post.slug %}">
+                {% csrf_token %}
+                <button class="btn btn-outline-danger btn-sm" type="submit">
+                    ❤ 赞同 <span class="badge bg-danger-subtle text-danger">{{ post.like_count }}</span>
+                    {% if user_liked %}(已赞){% endif %}
+                </button>
+            </form>
+            <form method="post" action="{% url 'blog:post_favorite' post.slug %}">
+                {% csrf_token %}
+                <button class="btn btn-outline-warning btn-sm" type="submit">
+                    ★ 收藏 <span class="badge bg-warning-subtle text-dark">{{ post.favorite_count }}</span>
+                    {% if user_favorited %}(已收藏){% endif %}
+                </button>
+            </form>
+            {% if request.user == post.author %}
+                <a class="btn btn-outline-secondary btn-sm" href="{% url 'blog:post_edit' post.slug %}">编辑</a>
+            {% endif %}
+        {% else %}
+            <a class="btn btn-outline-primary btn-sm" href="{% url 'login' %}">登录后可点赞/收藏/评论</a>
+        {% endif %}
+        <a class="btn btn-link btn-sm" href="{% url 'blog:post_list' %}">&larr; 返回首页</a>
+    </div>
+
+    <section class="mt-4">
+        <h5 class="mb-3">评论</h5>
+        {% if request.user.is_authenticated %}
+            <form method="post" action="{% url 'blog:comment_add' post.slug %}" class="mb-4">
+                {% csrf_token %}
+                {{ comment_form.content }}
+                <div class="mt-2">
+                    <button class="btn btn-primary btn-sm" type="submit">发表评论</button>
+                </div>
+            </form>
+        {% else %}
+            <div class="alert alert-info">登录后可以发表评论。</div>
+        {% endif %}
+
+        {% for c in top_comments %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <img src="{% if c.author.profile and c.author.profile.avatar %}{{ c.author.profile.avatar.url }}{% else %}{% static 'blog/default-avatar.svg' %}{% endif %}"
+                                 alt="评论者头像" style="width:22px;height:22px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-right:6px">
+                            <strong>{{ c.author.username }}</strong> · <small class="text-muted">{{ c.created_on }}</small>
+                        </div>
+                        <div>
+                            {% if request.user.is_authenticated %}
+                            <form method="post" action="{% url 'blog:comment_like' c.id %}" class="d-inline">
+                                {% csrf_token %}
+                                <button class="btn btn-sm btn-outline-danger" type="submit">❤ {{ c.like_count }}</button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="mt-2">{{ c.content|linebreaksbr }}</div>
+
+                    <div class="mt-3 ps-3 border-start">
+                        {% for r in c.replies.all %}
+                            <div class="mb-2">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <img src="{% if r.author.profile and r.author.profile.avatar %}{{ r.author.profile.avatar.url }}{% else %}{% static 'blog/default-avatar.svg' %}{% endif %}"
+                                             alt="回复者头像" style="width:20px;height:20px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-right:6px">
+                                        <strong>{{ r.author.username }}</strong> · <small class="text-muted">{{ r.created_on }}</small>
+                                    </div>
+                                    <div>
+                                        {% if request.user.is_authenticated %}
+                                        <form method="post" action="{% url 'blog:comment_like' r.id %}" class="d-inline">
+                                            {% csrf_token %}
+                                            <button class="btn btn-sm btn-outline-danger" type="submit">❤ {{ r.like_count }}</button>
+                                        </form>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div>{{ r.content|linebreaksbr }}</div>
+                            </div>
+                        {% empty %}
+                            <div class="text-muted">暂无回复</div>
+                        {% endfor %}
+
+                        {% if request.user.is_authenticated %}
+                        <form method="post" action="{% url 'blog:comment_reply' c.id %}">
+                            {% csrf_token %}
+                            <div class="input-group input-group-sm mt-2">
+                                <textarea name="content" class="form-control" rows="2" placeholder="回复 {{ c.author.username }}"></textarea>
+                                <button class="btn btn-outline-primary" type="submit">回复</button>
+                            </div>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <div class="alert alert-light">还没有评论，来做第一个吧！</div>
+        {% endfor %}
+    </section>
+{% endblock %}

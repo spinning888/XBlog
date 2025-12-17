@@ -1,0 +1,34 @@
+{% extends 'blog/base.html' %}
+{% block title %}我的文章 · 我的 Django 博客{% endblock %}
+{% block content %}
+    <h1 class="mb-3">我的文章</h1>
+    <p>
+        <a class="btn btn-link" href="{% url 'blog:post_list' %}">返回首页</a>
+        <a class="btn btn-success" href="{% url 'blog:post_create' %}">写新文章</a>
+    </p>
+    {% for post in posts %}
+    <div class="card mb-2">
+        <div class="card-body">
+            <h5 class="card-title"><a href="{% url 'blog:post_detail' post.slug %}">{{ post.title }}</a></h5>
+            <h6 class="card-subtitle mb-2 text-muted">{{ post.created_on }} · 作者: {{ post.author.username }}</h6>
+            <a class="btn btn-sm btn-outline-primary" href="{% url 'blog:post_edit' post.slug %}">编辑</a>
+        </div>
+    </div>
+    {% empty %}
+    <div class="alert alert-info">你还没有发表文章。</div>
+    {% endfor %}
+
+    {% if paginator.num_pages > 1 %}
+    <nav aria-label="分页" class="mt-3">
+        <ul class="pagination">
+            <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}" tabindex="-1">上一页</a>
+            </li>
+            <li class="page-item disabled"><span class="page-link">第 {{ page_obj.number }} / {{ paginator.num_pages }} 页</span></li>
+            <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}">下一页</a>
+            </li>
+        </ul>
+    </nav>
+    {% endif %}
+{% endblock %}

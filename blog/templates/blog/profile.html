@@ -1,0 +1,102 @@
+{% extends 'blog/base.html' %}
+{% block title %}个人主页 · XBlog{% endblock %}
+
+{% block hero %}
+<section class="hero">
+  <div class="container hero-inner">
+    <div class="row align-items-center">
+      <div class="col-md-8">
+        <h1 class="hero-title mb-2">{{ request.user.username }} 的主页</h1>
+        <p class="hero-subtitle mb-3">{{ profile.bio|default:"展示个人信息与我的博客文章" }}</p>
+        <div class="d-flex gap-2">
+          <a class="btn btn-light" href="{% url 'blog:post_list' %}">浏览全部文章</a>
+          <a class="btn btn-outline-light" href="{% url 'blog:post_create' %}">写新文章</a>
+        </div>
+      </div>
+      <div class="col-md-4 d-flex justify-content-md-end mt-3 mt-md-0">
+        {% load static %}
+        <img class="hero-avatar" src="{% if avatar_url %}{{ avatar_url }}{% else %}{% static 'blog/default-avatar.svg' %}{% endif %}" alt="头像"/>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block content %}
+  <div class="row mb-4">
+    <div class="col-md-6">
+      <div class="card post-card">
+        <div class="card-body">
+          <h5 class="card-title">个人信息</h5>
+          <p class="card-text">用户名：{{ request.user.username }}</p>
+          <p class="card-text">邮箱：{{ request.user.email|default:"未设置" }}</p>
+          <hr>
+          <form method="post" enctype="multipart/form-data" class="mb-2">
+            {% csrf_token %}
+            <div class="mb-2">
+              <label class="form-label">上传头像</label>
+              {{ avatar_form.avatar }}
+            </div>
+            <button class="btn btn-primary" type="submit">保存头像</button>
+          </form>
+          <form method="post" class="mb-2">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="remove_avatar">
+            <button class="btn btn-outline-danger" type="submit" onclick="return confirm('确认要删除头像吗？该操作不可恢复。');">删除头像</button>
+          </form>
+          <form method="post" class="mb-2">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="update_bio">
+            <div class="mb-2">
+              <label class="form-label">个人宣言</label>
+              {{ profile_form.bio }}
+            </div>
+            <button class="btn btn-outline-primary" type="submit">保存个人宣言</button>
+          </form>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card post-card">
+        <div class="card-body">
+          <h5 class="card-title">我的文章总数</h5>
+          <p class="card-text">{{ paginator.count }} 篇</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    {% for post in posts %}
+      <div class="col-md-6">
+        <div class="card post-card">
+          <div class="card-body">
+            <h5 class="card-title"><a href="{% url 'blog:post_detail' post.slug %}">{{ post.title }}</a></h5>
+            <h6 class="card-subtitle mb-2 text-muted">{{ post.created_on }}</h6>
+            <p class="card-text content-snippet">{{ post.content|slice:":140" }}...</p>
+            <div class="d-flex gap-2">
+              <a class="btn btn-sm btn-primary" href="{% url 'blog:post_detail' post.slug %}">阅读全文</a>
+              <a class="btn btn-sm btn-outline-secondary" href="{% url 'blog:post_edit' post.slug %}">编辑</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% empty %}
+      <div class="col-12"><div class="alert alert-info">你还没有发布任何文章。</div></div>
+    {% endfor %}
+  </div>
+
+  {% if paginator.num_pages > 1 %}
+  <nav aria-label="分页" class="mt-3">
+    <ul class="pagination justify-content-center">
+      <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
+        <a class="page-link" href="?page={{ page_obj.previous_page_number }}" tabindex="-1">上一页</a>
+      </li>
+      <li class="page-item disabled"><span class="page-link">第 {{ page_obj.number }} / {{ paginator.num_pages }} 页</span></li>
+      <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
+        <a class="page-link" href="?page={{ page_obj.next_page_number }}">下一页</a>
+      </li>
+    </ul>
+  </nav>
+  {% endif %}
+{% endblock %}
